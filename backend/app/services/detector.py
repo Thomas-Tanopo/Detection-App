@@ -2,7 +2,11 @@ import cv2
 import os
 import base64
 import numpy as np
-from ultralytics import YOLO
+
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 
 _model = None
 
