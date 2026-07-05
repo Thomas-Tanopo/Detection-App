@@ -11,4 +11,3 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
