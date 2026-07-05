@@ -1,101 +1,53 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.category import Category
-from app.routers.auth import get_current_user
-from app.jinja_setup import templates
+from app.auth_jwt import get_current_user
+from app.models.user import User
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter()
 
-@router.get("", response_class=HTMLResponse)
-async def list_categories(
-    request: Request,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    categories = db.query(Category).order_by(Category.created_at.desc()).all()
-    return templates.TemplateResponse(request, "categories/list.html", {
-        "user": user,
-        "categories": categories
-    })
+class CategoryCreate(BaseModel):
+    name: str
+    description: str = ""
 
-@router.get("/create", response_class=HTMLResponse)
-async def create_category_page(
-    request: Request,
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    return templates.TemplateResponse(request, "categories/form.html", {
-        "user": user,
-        "category": None
-    })
+@router.get("")
+def list_categories(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    cats = db.query(Category).order_by(Category.created_at.desc()).all()
+    return [{"id": c.id, "name": c.name, "description": c.description, "created_at": c.created_at.isoformat()} for c in cats]
 
-@router.post("/create")
-async def create_category(
-    request: Request,
-    name: str = Form(...),
-    description: str = Form(None),
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    category = Category(name=name, description=description)
-    db.add(category)
+@router.post("")
+def create_category(data: CategoryCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    c = Category(name=data.name, description=data.description)
+    db.add(c)
     db.commit()
-    return RedirectResponse(url="/categories", status_code=302)
+    db.refresh(c)
+    return {"id": c.id, "name": c.name, "description": c.description, "created_at": c.created_at.isoformat()}
 
-@router.get("/{id}/edit", response_class=HTMLResponse)
-async def edit_category_page(
-    request: Request,
-    id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    category = db.query(Category).filter(Category.id == id).first()
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return templates.TemplateResponse(request, "categories/form.html", {
-        "user": user,
-        "category": category
-    })
+@router.get("/{id}")
+def get_category(id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    c = db.query(Category).filter(Category.id == id).first()
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+    return {"id": c.id, "name": c.name, "description": c.description, "created_at": c.created_at.isoformat()}
 
-@router.post("/{id}/edit")
-async def edit_category(
-    request: Request,
-    id: int,
-    name: str = Form(...),
-    description: str = Form(None),
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    category = db.query(Category).filter(Category.id == id).first()
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    category.name = name
-    category.description = description
+@router.put("/{id}")
+def update_category(id: int, data: CategoryCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    c = db.query(Category).filter(Category.id == id).first()
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+    c.name = data.name
+    c.description = data.description
     db.commit()
-    return RedirectResponse(url="/categories", status_code=302)
+    db.refresh(c)
+    return {"id": c.id, "name": c.name, "description": c.description, "created_at": c.created_at.isoformat()}
 
-@router.get("/{id}/delete")
-async def delete_category(
-    request: Request,
-    id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    category = db.query(Category).filter(Category.id == id).first()
-    if category:
-        db.delete(category)
-        db.commit()
-    return RedirectResponse(url="/categories", status_code=302)
+@router.delete("/{id}")
+def delete_category(id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    c = db.query(Category).filter(Category.id == id).first()
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+    db.delete(c)
+    db.commit()
+    return {"message": "Kategori berhasil dihapus"}

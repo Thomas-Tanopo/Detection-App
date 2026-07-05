@@ -1,15 +1,13 @@
 import os, bcrypt
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings, STATIC_DIR
 from app.database import engine, Base, SessionLocal
 from app.models.user import User
 from app.models.category import Category
 from app.models.item import Item
 from app.routers import auth, categories, items, detection, dashboard, reports
-from app.jinja_setup import templates
 
 Base.metadata.create_all(bind=engine)
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -18,7 +16,6 @@ db = SessionLocal()
 if not db.query(User).filter(User.username == 'admin').first():
     pwd = bcrypt.hashpw(b'admin123', bcrypt.gensalt()).decode('utf-8')
     db.add(User(username='admin', email='admin@test.com', password_hash=pwd, full_name='Administrator'))
-
     cats = [
         {"name": "Kendaraan", "description": "Mobil, motor, bus, truk dan kendaraan lainnya"},
         {"name": "Elektronik", "description": "Laptop, HP, TV, dan perangkat elektronik"},
@@ -56,18 +53,23 @@ if not db.query(User).filter(User.username == 'admin').first():
     db.commit()
 db.close()
 
-app = FastAPI(title="Detect App")
+app = FastAPI(title="Detect App API")
 
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.include_router(auth.router)
-app.include_router(categories.router)
-app.include_router(items.router)
-app.include_router(detection.router)
-app.include_router(dashboard.router)
-app.include_router(reports.router)
+uploads_dir = os.path.join(STATIC_DIR, "uploads")
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-@app.get("/")
-async def root():
-    return RedirectResponse(url="/dashboard")
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
+app.include_router(items.router, prefix="/api/items", tags=["Items"])
+app.include_router(detection.router, prefix="/api/detection", tags=["Detection"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])

@@ -1,82 +1,52 @@
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 import bcrypt
 from app.database import get_db
 from app.models.user import User
-from app.jinja_setup import templates
+from app.auth_jwt import create_access_token, get_current_user
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+    full_name: str = ""
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return None
-    return db.query(User).filter(User.id == user_id).first()
-
-@router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse(request, "auth/login.html")
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
 
 @router.post("/login")
-async def login(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.username == username).first()
-    if not user or not verify_password(password, user.password_hash):
-        return templates.TemplateResponse(request, "auth/login.html", {
-            "error": "Username atau password salah"
-        })
-    request.session["user_id"] = user.id
-    return RedirectResponse(url="/dashboard", status_code=302)
-
-@router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    return templates.TemplateResponse(request, "auth/register.html")
+def login(req: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == req.username).first()
+    if not user or not bcrypt.checkpw(req.password.encode('utf-8'), user.password_hash.encode('utf-8')):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Username atau password salah")
+    token = create_access_token({"user_id": user.id})
+    return AuthResponse(access_token=token, user={
+        "id": user.id, "username": user.username, "full_name": user.full_name, "email": user.email
+    })
 
 @router.post("/register")
-async def register(
-    request: Request,
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    full_name: str = Form(None),
-    db: Session = Depends(get_db)
-):
-    if len(password) < 6:
-        return templates.TemplateResponse(request, "auth/register.html", {
-            "error": "Password minimal 6 karakter"
-        })
-    if db.query(User).filter(User.username == username).first():
-        return templates.TemplateResponse(request, "auth/register.html", {
-            "error": "Username sudah digunakan"
-        })
-    if db.query(User).filter(User.email == email).first():
-        return templates.TemplateResponse(request, "auth/register.html", {
-            "error": "Email sudah digunakan"
-        })
-
-    user = User(
-        username=username,
-        email=email,
-        password_hash=hash_password(password),
-        full_name=full_name
-    )
+def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    if db.query(User).filter((User.username == req.username) | (User.email == req.email)).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username atau email sudah terdaftar")
+    pwd = bcrypt.hashpw(req.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    user = User(username=req.username, email=req.email, password_hash=pwd, full_name=req.full_name)
     db.add(user)
     db.commit()
-    request.session["user_id"] = user.id
-    return RedirectResponse(url="/dashboard", status_code=302)
+    db.refresh(user)
+    token = create_access_token({"user_id": user.id})
+    return AuthResponse(access_token=token, user={
+        "id": user.id, "username": user.username, "full_name": user.full_name, "email": user.email
+    })
 
-@router.get("/logout")
-async def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse(url="/auth/login", status_code=302)
+@router.get("/me")
+def me(user: User = Depends(get_current_user)):
+    return {"id": user.id, "username": user.username, "full_name": user.full_name, "email": user.email}

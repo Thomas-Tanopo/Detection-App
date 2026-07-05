@@ -1,110 +1,68 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.item import Item
 from app.models.category import Category
-from app.routers.auth import get_current_user
-from app.jinja_setup import templates
+from app.auth_jwt import get_current_user
+from app.models.user import User
 
-router = APIRouter(prefix="/items", tags=["items"])
+router = APIRouter()
 
-@router.get("", response_class=HTMLResponse)
-async def list_items(
-    request: Request,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
+class ItemCreate(BaseModel):
+    name: str
+    description: str = ""
+    category_id: int = 0
+
+@router.get("")
+def list_items(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     items = db.query(Item).order_by(Item.created_at.desc()).all()
-    return templates.TemplateResponse(request, "items/list.html", {
-        "user": user,
-        "items": items
-    })
+    result = []
+    for i in items:
+        cat_name = i.category.name if i.category else None
+        result.append({"id": i.id, "name": i.name, "description": i.description, "category_id": i.category_id, "category_name": cat_name, "created_at": i.created_at.isoformat()})
+    return result
 
-@router.get("/create", response_class=HTMLResponse)
-async def create_item_page(
-    request: Request,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    categories = db.query(Category).order_by(Category.name).all()
-    return templates.TemplateResponse(request, "items/form.html", {
-        "user": user,
-        "item": None,
-        "categories": categories
-    })
-
-@router.post("/create")
-async def create_item(
-    request: Request,
-    name: str = Form(...),
-    description: str = Form(None),
-    category_id: int = Form(None),
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    item = Item(name=name, description=description, category_id=category_id)
-    db.add(item)
+@router.post("")
+def create_item(data: ItemCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if data.category_id:
+        cat = db.query(Category).filter(Category.id == data.category_id).first()
+        if not cat:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+    i = Item(name=data.name, description=data.description, category_id=data.category_id or None)
+    db.add(i)
     db.commit()
-    return RedirectResponse(url="/items", status_code=302)
+    db.refresh(i)
+    return {"id": i.id, "name": i.name, "description": i.description, "category_id": i.category_id, "created_at": i.created_at.isoformat()}
 
-@router.get("/{id}/edit", response_class=HTMLResponse)
-async def edit_item_page(
-    request: Request,
-    id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    item = db.query(Item).filter(Item.id == id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    categories = db.query(Category).order_by(Category.name).all()
-    return templates.TemplateResponse(request, "items/form.html", {
-        "user": user,
-        "item": item,
-        "categories": categories
-    })
+@router.get("/{id}")
+def get_item(id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    i = db.query(Item).filter(Item.id == id).first()
+    if not i:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Objek tidak ditemukan")
+    return {"id": i.id, "name": i.name, "description": i.description, "category_id": i.category_id, "created_at": i.created_at.isoformat()}
 
-@router.post("/{id}/edit")
-async def edit_item(
-    request: Request,
-    id: int,
-    name: str = Form(...),
-    description: str = Form(None),
-    category_id: int = Form(None),
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    item = db.query(Item).filter(Item.id == id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.name = name
-    item.description = description
-    item.category_id = category_id
+@router.put("/{id}")
+def update_item(id: int, data: ItemCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    i = db.query(Item).filter(Item.id == id).first()
+    if not i:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Objek tidak ditemukan")
+    if data.category_id:
+        cat = db.query(Category).filter(Category.id == data.category_id).first()
+        if not cat:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+    i.name = data.name
+    i.description = data.description
+    i.category_id = data.category_id or None
     db.commit()
-    return RedirectResponse(url="/items", status_code=302)
+    db.refresh(i)
+    return {"id": i.id, "name": i.name, "description": i.description, "category_id": i.category_id, "created_at": i.created_at.isoformat()}
 
-@router.get("/{id}/delete")
-async def delete_item(
-    request: Request,
-    id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    item = db.query(Item).filter(Item.id == id).first()
-    if item:
-        db.delete(item)
-        db.commit()
-    return RedirectResponse(url="/items", status_code=302)
+@router.delete("/{id}")
+def delete_item(id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    i = db.query(Item).filter(Item.id == id).first()
+    if not i:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Objek tidak ditemukan")
+    db.delete(i)
+    db.commit()
+    return {"message": "Objek berhasil dihapus"}

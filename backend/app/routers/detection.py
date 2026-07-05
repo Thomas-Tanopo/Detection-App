@@ -1,122 +1,71 @@
-from fastapi import APIRouter, Request, Depends, UploadFile, File
-from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
+import uuid, os, json
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-import os
-import uuid
-import json
+from app.config import settings
 from app.database import get_db
 from app.models.detection import Detection
-from app.routers.auth import get_current_user
-from app.config import settings
+from app.models.user import User
+from app.auth_jwt import get_current_user
 from app.services.detector import detect_objects, detect_from_frame
-from app.jinja_setup import templates
 
-router = APIRouter(prefix="/detection", tags=["detection"])
-
-@router.get("/upload", response_class=HTMLResponse)
-async def upload_page(
-    request: Request,
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    return templates.TemplateResponse(request, "detection/upload.html", {
-        "user": user
-    })
-
-@router.get("/camera", response_class=HTMLResponse)
-async def camera_page(
-    request: Request,
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    return templates.TemplateResponse(request, "detection/camera.html", {
-        "user": user
-    })
+router = APIRouter()
 
 @router.post("/upload")
-async def detect_upload(
-    request: Request,
-    image: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-
-    ext = os.path.splitext(image.filename)[1] or ".jpg"
+async def upload_detect(file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
     filename = f"{uuid.uuid4()}{ext}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
-
-    content = await image.read()
+    content = await file.read()
     with open(filepath, "wb") as f:
         f.write(content)
-
-    detected_objects = detect_objects(filepath)
-
-    detection = Detection(
-        image_path=f"static/uploads/{filename}",
-        detected_objects=json.dumps(detected_objects),
-        user_id=user.id
-    )
-    db.add(detection)
+    objects = detect_objects(filepath)
+    det = Detection(image_path=filename, detected_objects=json.dumps(objects), user_id=user.id)
+    db.add(det)
     db.commit()
-    db.refresh(detection)
+    db.refresh(det)
+    return {
+        "detection_id": det.id,
+        "image_url": f"/uploads/{filename}",
+        "detected_objects": objects,
+        "created_at": det.created_at.isoformat()
+    }
 
-    return templates.TemplateResponse(request, "detection/result.html", {
-        "user": user,
-        "detection": detection,
-        "detected_objects": detected_objects,
-        "image_url": f"/static/uploads/{filename}"
-    })
+class FrameRequest(BaseModel):
+    image: str
 
 @router.post("/detect-frame")
-async def detect_frame(
-    request: Request,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+def detect_frame(req: FrameRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        objects, annotated_b64, _ = detect_from_frame(req.image)
+        filename = f"{uuid.uuid4()}.jpg"
+        filepath = os.path.join(settings.UPLOAD_DIR, filename)
+        with open(filepath, "wb") as f:
+            f.write(annotated_b64)
+        det = Detection(image_path=filename, detected_objects=json.dumps(objects), user_id=user.id)
+        db.add(det)
+        db.commit()
+        db.refresh(det)
+        return {
+            "detection_id": det.id,
+            "image_url": f"/uploads/{filename}",
+            "detected_objects": objects,
+            "created_at": det.created_at.isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    data = await request.json()
-    image_data = data.get("image", "")
-
-    detected_objects, _, annotated_bytes = detect_from_frame(image_data)
-
-    filename = f"{uuid.uuid4()}.jpg"
-    filepath = os.path.join(settings.UPLOAD_DIR, filename)
-    with open(filepath, "wb") as f:
-        f.write(annotated_bytes)
-
-    detection = Detection(
-        image_path=f"static/uploads/{filename}",
-        detected_objects=json.dumps(detected_objects),
-        user_id=user.id
-    )
-    db.add(detection)
-    db.commit()
-    db.refresh(detection)
-
-    return JSONResponse({
-        "detection_id": detection.id,
-        "detected_objects": detected_objects,
-        "image_url": f"/static/uploads/{filename}"
-    })
-
-@router.get("/history", response_class=HTMLResponse)
-async def history(
-    request: Request,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
-):
-    if not user:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    detections = db.query(Detection).filter(
-        Detection.user_id == user.id
-    ).order_by(Detection.created_at.desc()).all()
-    return templates.TemplateResponse(request, "detection/history.html", {
-        "user": user,
-        "detections": detections
-    })
+@router.get("/history")
+def history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    dets = db.query(Detection).filter(Detection.user_id == user.id).order_by(Detection.created_at.desc()).all()
+    result = []
+    for d in dets:
+        objects = json.loads(d.detected_objects) if d.detected_objects else []
+        result.append({
+            "id": d.id,
+            "image_url": f"/uploads/{d.image_path}" if d.image_path else None,
+            "detected_objects": objects,
+            "total_objects": len(objects),
+            "created_at": d.created_at.isoformat()
+        })
+    return result
