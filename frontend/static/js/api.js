@@ -1,4 +1,4 @@
-const API_BASE = localStorage.getItem('api_base') || 'http://localhost:8000';
+const API_BASE = localStorage.getItem('api_base') || window.API_BASE || 'http://localhost:8000';
 
 async function apiFetch(path, options = {}) {
     const token = localStorage.getItem('token');
