@@ -2,7 +2,7 @@ import os, bcrypt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.config import settings, STATIC_DIR
+from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.models.user import User
 from app.models.category import Category
@@ -63,8 +63,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-uploads_dir = os.path.join(STATIC_DIR, "uploads")
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
