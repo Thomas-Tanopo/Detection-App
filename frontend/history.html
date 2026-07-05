@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat — Detect App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <div class="brand"><i class="bi bi-shield-check"></i> Detect App</div>
+    <ul class="nav flex-column">
+      <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link" href="categories.html"><i class="bi bi-tags"></i> Kategori</a></li>
+      <li class="nav-item"><a class="nav-link" href="items.html"><i class="bi bi-box"></i> Item</a></li>
+      <li class="nav-item"><a class="nav-link" href="upload.html"><i class="bi bi-upload"></i> Upload</a></li>
+      <li class="nav-item"><a class="nav-link" href="camera.html"><i class="bi bi-camera"></i> Kamera</a></li>
+      <li class="nav-item"><a class="nav-link active" href="history.html"><i class="bi bi-clock-history"></i> Riwayat</a></li>
+      <li class="nav-item"><a class="nav-link" href="reports.html"><i class="bi bi-file-earmark-bar-graph"></i> Laporan</a></li>
+    </ul>
+  </div>
+  <div class="topbar">
+    <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+    <div class="user-info">
+      <span id="userName">User</span><div class="avatar" id="userAvatar">U</div>
+      <button class="btn btn-sm btn-outline-danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i></button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="content-inner">
+      <div id="alertContainer"></div>
+      <h4 class="mb-3">Riwayat Deteksi</h4>
+      <div class="card"><div class="card-body">
+        <div class="table-responsive"><table id="historyTable" class="table table-striped"><thead><tr><th>Gambar</th><th>Objek</th><th>Total</th><th>Tanggal</th></tr></thead><tbody></tbody></table></div>
+      </div></div>
+    </div>
+  </div>
+  <!-- Preview Modal -->
+  <div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Detail Deteksi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body text-center" id="previewBody"></div>
+    </div></div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/main.js"></script>
+  <script>
+    requireAuth();
+    const user = getCurrentUser();
+    if (user) {
+      document.getElementById('userName').textContent = user.full_name || user.username;
+      document.getElementById('userAvatar').textContent = (user.full_name || user.username || 'U')[0].toUpperCase();
+    }
+    document.getElementById('sidebarToggle').onclick = function(){ document.getElementById('sidebar').classList.toggle('open'); };
+
+    let dt;
+    async function loadHistory() {
+      try {
+        const data = await getDetectionHistory();
+        if (dt) dt.destroy();
+        const tbody = document.querySelector('#historyTable tbody');
+        tbody.innerHTML = '';
+        data.forEach(h => {
+          const objs = (h.detected_objects || []).map(o => `<span class="detection-badge">${o.label || o.name || o}</span>`).join(' ') || '-';
+          const imgUrl = h.image_url ? `${window.API_BASE}${h.image_url}` : '';
+          const thumb = imgUrl ? `<img src="${imgUrl}" class="thumbnail-img" onclick="showPreview('${imgUrl}','${h.detected_objects ? encodeURIComponent(JSON.stringify(h.detected_objects)) : ''}',${h.total_objects || 0})">` : '-';
+          tbody.innerHTML += `<tr><td>${thumb}</td><td>${objs}</td><td>${h.total_objects || 0}</td><td>${formatDate(h.created_at)}</td></tr>`;
+        });
+        dt = initDataTable('#historyTable', { order: [[3, 'desc']] });
+      } catch(err) { handleApiError(err); }
+    }
+
+    function showPreview(imgUrl, objectsEncoded, total) {
+      const body = document.getElementById('previewBody');
+      let objects = [];
+      try { objects = JSON.parse(decodeURIComponent(objectsEncoded)); } catch(e) {}
+      const objsHtml = objects.map(o => `<span class="detection-badge">${o.label || o.name || o} (${(o.confidence * 100 || 0).toFixed(1)}%)</span>`).join(' ') || '<span class="text-muted">Tidak ada objek</span>';
+      body.innerHTML = `
+        <img src="${imgUrl}" class="w-100 mb-3" style="max-height:400px;object-fit:contain;">
+        <p><strong>Total Objek:</strong> ${total}</p>
+        <div>${objsHtml}</div>`;
+      showModal('previewModal');
+    }
+    loadHistory();
+  </script>
+</body>
+</html>

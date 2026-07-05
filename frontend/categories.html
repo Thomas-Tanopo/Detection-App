@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kategori — Detect App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <div class="brand"><i class="bi bi-shield-check"></i> Detect App</div>
+    <ul class="nav flex-column">
+      <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link active" href="categories.html"><i class="bi bi-tags"></i> Kategori</a></li>
+      <li class="nav-item"><a class="nav-link" href="items.html"><i class="bi bi-box"></i> Item</a></li>
+      <li class="nav-item"><a class="nav-link" href="upload.html"><i class="bi bi-upload"></i> Upload</a></li>
+      <li class="nav-item"><a class="nav-link" href="camera.html"><i class="bi bi-camera"></i> Kamera</a></li>
+      <li class="nav-item"><a class="nav-link" href="history.html"><i class="bi bi-clock-history"></i> Riwayat</a></li>
+      <li class="nav-item"><a class="nav-link" href="reports.html"><i class="bi bi-file-earmark-bar-graph"></i> Laporan</a></li>
+    </ul>
+  </div>
+  <div class="topbar">
+    <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+    <div class="user-info">
+      <span id="userName">User</span><div class="avatar" id="userAvatar">U</div>
+      <button class="btn btn-sm btn-outline-danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i></button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="content-inner">
+      <div id="alertContainer"></div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Kategori</h4>
+        <button class="btn btn-success" onclick="openCreateModal()"><i class="bi bi-plus-lg"></i> Tambah</button>
+      </div>
+      <div class="card"><div class="card-body">
+        <div class="table-responsive"><table id="categoryTable" class="table table-striped"><thead><tr><th>ID</th><th>Nama</th><th>Deskripsi</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+      </div></div>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="modalTitle">Tambah Kategori</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="categoryForm">
+          <input type="hidden" id="editId">
+          <div class="mb-3"><label class="form-label">Nama</label><input type="text" class="form-control" id="catName" required></div>
+          <div class="mb-3"><label class="form-label">Deskripsi</label><textarea class="form-control" id="catDescription" rows="3"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-success" id="saveBtn" onclick="saveCategory()"><span id="saveSpinner" class="spinner-border spinner-border-sm d-none"></span> Simpan</button>
+      </div>
+    </div></div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/main.js"></script>
+  <script>
+    requireAuth();
+    const user = getCurrentUser();
+    if (user) {
+      document.getElementById('userName').textContent = user.full_name || user.username;
+      document.getElementById('userAvatar').textContent = (user.full_name || user.username || 'U')[0].toUpperCase();
+    }
+    document.getElementById('sidebarToggle').onclick = function(){ document.getElementById('sidebar').classList.toggle('open'); };
+
+    let dt;
+    async function loadCategories() {
+      try {
+        const data = await getCategories();
+        if (dt) dt.destroy();
+        const tbody = document.querySelector('#categoryTable tbody');
+        tbody.innerHTML = '';
+        data.forEach(c => {
+          tbody.innerHTML += `<tr>
+            <td>${c.id}</td><td>${c.name}</td><td>${c.description || '-'}</td><td>${formatDate(c.created_at)}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="openEditModal(${c.id})"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${c.id},'${c.name}')"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>`;
+        });
+        dt = initDataTable('#categoryTable');
+      } catch(err) { handleApiError(err); }
+    }
+
+    function openCreateModal() {
+      document.getElementById('editId').value = '';
+      document.getElementById('modalTitle').textContent = 'Tambah Kategori';
+      document.getElementById('catName').value = '';
+      document.getElementById('catDescription').value = '';
+      showModal('categoryModal');
+    }
+
+    async function openEditModal(id) {
+      document.getElementById('editId').value = id;
+      document.getElementById('modalTitle').textContent = 'Edit Kategori';
+      try {
+        const c = await getCategory(id);
+        document.getElementById('catName').value = c.name;
+        document.getElementById('catDescription').value = c.description || '';
+        showModal('categoryModal');
+      } catch(err) { handleApiError(err); }
+    }
+
+    async function saveCategory() {
+      const btn = document.getElementById('saveBtn');
+      const spinner = document.getElementById('saveSpinner');
+      btn.disabled = true; spinner.classList.remove('d-none');
+      const id = document.getElementById('editId').value;
+      const body = { name: document.getElementById('catName').value, description: document.getElementById('catDescription').value };
+      try {
+        if (id) { await updateCategory(parseInt(id), body); showAlert('Kategori berhasil diperbarui', 'success'); }
+        else { await createCategory(body); showAlert('Kategori berhasil ditambahkan', 'success'); }
+        hideModal('categoryModal');
+        loadCategories();
+      } catch(err) { handleApiError(err); }
+      finally { btn.disabled = false; spinner.classList.add('d-none'); }
+    }
+
+    function confirmDelete(id, name) {
+      if (confirm(`Hapus kategori "${name}"?`)) {
+        deleteCategory(id).then(() => { showAlert('Kategori berhasil dihapus', 'success'); loadCategories(); }).catch(handleApiError);
+      }
+    }
+    loadCategories();
+  </script>
+</body>
+</html>

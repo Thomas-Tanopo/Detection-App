@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ["pip install serve 2>/dev/null || true"]
+
+[start]
+cmd = "python3 -m http.server 8000"
