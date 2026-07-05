@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Deteksi - Detect App{% endblock %}
+{% block page_title %}<i class="bi bi-clock-history me-2"></i>Riwayat Deteksi{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold">Riwayat Deteksi</h6>
+        <span class="badge bg-primary">{{ detections|length }} data</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover datatable" id="historyTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 50px">ID</th>
+                        <th>Gambar</th>
+                        <th>Objek Terdeteksi</th>
+                        <th class="d-none d-sm-table-cell">Tanggal</th>
+                        <th class="text-center" style="width: 80px">Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in detections %}
+                    <tr>
+                        <td data-order="{{ d.id }}">#{{ d.id }}</td>
+                        <td>
+                            {% if d.image_path %}
+                            <img src="/{{ d.image_path }}" class="rounded thumb-preview" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                 data-preview="{{ d.image_path }}"
+                                 data-objects='{{ d.detected_objects if d.detected_objects else "[]" }}'
+                                 data-id="{{ d.id }}"
+                                 onerror="this.src='https://via.placeholder.com/60?text=No+Img'">
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.detected_objects %}
+                                {% set objects = d.detected_objects|from_json %}
+                                {% for obj in objects[:3] %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ obj.label }}</span>
+                                {% endfor %}
+                                {% if objects|length > 3 %}
+                                <span class="badge bg-secondary">+{{ objects|length - 3 }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-sm-table-cell">{{ d.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-primary btn-detail" title="Detail"
+                                    data-preview="{{ d.image_path }}"
+                                    data-objects='{{ d.detected_objects if d.detected_objects else "[]" }}'
+                                    data-id="{{ d.id }}">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 d-block text-muted mb-2"></i>
+                            <span class="text-muted">Belum ada riwayat deteksi</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold"><i class="bi bi-image me-2"></i>Detail Deteksi #<span id="modalDetId"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" class="img-fluid rounded" style="max-height: 500px;">
+                <div id="modalObjects" class="mt-3 text-start"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $(document).on('click', '.thumb-preview, .btn-detail', function() {
+            const img = $(this).data('preview');
+            const raw = $(this).data('objects');
+            const id = $(this).data('id');
+
+            $('#modalDetId').text(id);
+            $('#modalImage').attr('src', '/' + img);
+
+            let objects = [];
+            try { objects = JSON.parse(raw); } catch(e) {}
+
+            const container = $('#modalObjects');
+            if (objects && objects.length) {
+                let html = '<h6 class="fw-semibold mb-2">Objek Terdeteksi:</h6><div class="table-responsive">';
+                html += '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>#</th><th>Label</th><th>Confidence</th></tr></thead><tbody>';
+                objects.forEach((obj, i) => {
+                    html += `<tr><td>${i+1}</td><td><span class="badge bg-primary">${obj.label}</span></td><td>${(obj.confidence * 100).toFixed(1)}%</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+                container.html(html);
+            } else {
+                container.html('<div class="alert alert-info mb-0">Tidak ada objek terdeteksi</div>');
+            }
+
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        });
+
+        if ($('#historyTable tbody tr').length > 1) {
+            $('#historyTable').DataTable({
+                responsive: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: [0, 4] }
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                },
+                order: [[0, 'desc']]
+            });
+        }
+    });
+</script>
+{% endblock %}

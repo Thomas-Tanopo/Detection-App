@@ -1,0 +1,245 @@
+:root {
+    --sidebar-width: 260px;
+    --sidebar-bg: #1a1d23;
+    --sidebar-hover: #2d313a;
+    --sidebar-active: #0d6efd;
+    --topbar-height: 60px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f6fa;
+    overflow-x: hidden;
+}
+
+#wrapper {
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+.sidebar-brand {
+    color: #fff !important;
+    font-size: 1.2rem;
+}
+
+.sidebar hr {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin: 0.75rem 0;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.65);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    margin: 0.15rem 0;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background: var(--sidebar-hover);
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background: var(--sidebar-active);
+}
+
+.sidebar .nav-link i {
+    font-size: 1.1rem;
+    width: 22px;
+    text-align: center;
+}
+
+.sidebar small {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+}
+
+.sidebar .dropdown-menu {
+    font-size: 0.9rem;
+}
+
+.content-wrapper {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    width: calc(100% - var(--sidebar-width));
+    transition: margin 0.3s ease;
+}
+
+.navbar {
+    height: var(--topbar-height);
+}
+
+.navbar .navbar-text {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.card {
+    border-radius: 12px;
+    transition: transform 0.2s;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #fafbfc;
+}
+
+.drop-zone:hover,
+.drop-zone-active {
+    border-color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    padding: 1rem;
+}
+
+.auth-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.auth-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.8rem;
+}
+
+.auth-card .form-control {
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+}
+
+.auth-card .input-group-text {
+    background: #f8f9fa;
+    border-radius: 8px 0 0 8px;
+}
+
+.auth-card .btn-primary {
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .sidebar-overlay.show {
+        display: block;
+    }
+    .content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (min-width: 768px) {
+    .sidebar {
+        transform: translateX(0) !important;
+    }
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-card {
+        padding: 1.5rem !important;
+    }
+    .drop-zone {
+        padding: 1.5rem 1rem !important;
+    }
+    .drop-zone i {
+        font-size: 2.5rem !important;
+    }
+}
+
+@media (min-width: 576px) {
+    .w-sm-auto { width: auto !important; }
+}
+
+@media (max-width: 400px) {
+    .table td, .table th {
+        font-size: 0.8rem;
+    }
+}

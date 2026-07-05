@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Detect App{% endblock %}
+{% block page_title %}<i class="bi bi-speedometer2 me-2"></i>Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-1 fw-bold">Selamat datang, {{ user.full_name or user.username }}!</h5>
+        <p class="text-muted mb-0 d-none d-sm-block">Berikut ringkasan aktivitas deteksi Anda hari ini.</p>
+    </div>
+    <div class="d-none d-md-block">
+        <span class="badge bg-light text-muted px-3 py-2">
+            <i class="bi bi-calendar3 me-1"></i><span id="currentDate"></span>
+        </span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body position-relative">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="z-1">
+                        <p class="text-white opacity-75 mb-1 small">Deteksi Hari Ini</p>
+                        <h2 class="text-white mb-0 fw-bold">{{ today_detections }}</h2>
+                        <small class="text-white opacity-75">
+                            {% if trend_pct > 0 %}
+                            <i class="bi bi-arrow-up-short"></i> +{{ trend_pct }}%
+                            {% elif trend_pct < 0 %}
+                            <i class="bi bi-arrow-down-short"></i> {{ trend_pct }}%
+                            {% else %}
+                            <i class="bi bi-dash"></i> 0%
+                            {% endif %}
+                            vs kemarin
+                        </small>
+                    </div>
+                    <div class="z-1 text-end">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+                            <i class="bi bi-camera-fill fs-4 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="position-absolute top-0 end-0 bottom-0 opacity-10 d-flex align-items-center pe-3">
+                    <i class="bi bi-camera-fill" style="font-size: 6rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body position-relative">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="z-1">
+                        <p class="text-white opacity-75 mb-1 small">Total Deteksi</p>
+                        <h2 class="text-white mb-0 fw-bold">{{ total_detections }}</h2>
+                        <small class="text-white opacity-75">
+                            <i class="bi bi-clock me-1"></i>Semua waktu
+                        </small>
+                    </div>
+                    <div class="z-1 text-end">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+                            <i class="bi bi-bar-chart-fill fs-4 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="position-absolute top-0 end-0 bottom-0 opacity-10 d-flex align-items-center pe-3">
+                    <i class="bi bi-bar-chart-fill" style="font-size: 6rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="card-body position-relative">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="z-1">
+                        <p class="text-white opacity-75 mb-1 small">Master Objek</p>
+                        <h2 class="text-white mb-0 fw-bold">{{ total_items }}</h2>
+                        <small class="text-white opacity-75">
+                            <i class="bi bi-tags me-1"></i>{{ total_categories }} Kategori
+                        </small>
+                    </div>
+                    <div class="z-1 text-end">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+                            <i class="bi bi-box-fill fs-4 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="position-absolute top-0 end-0 bottom-0 opacity-10 d-flex align-items-center pe-3">
+                    <i class="bi bi-box-fill" style="font-size: 6rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="card-body position-relative">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="z-1">
+                        <p class="text-white opacity-75 mb-1 small">Pengguna</p>
+                        <h2 class="text-white mb-0 fw-bold">{{ total_users }}</h2>
+                        <small class="text-white opacity-75">
+                            <i class="bi bi-person me-1"></i>Terdaftar
+                        </small>
+                    </div>
+                    <div class="z-1 text-end">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+                            <i class="bi bi-people-fill fs-4 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="position-absolute top-0 end-0 bottom-0 opacity-10 d-flex align-items-center pe-3">
+                    <i class="bi bi-people-fill" style="font-size: 6rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-xl-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i>Tren Deteksi (14 Hari)</h6>
+                <span class="badge bg-primary bg-opacity-10 text-primary">{{ total_detections }} total</span>
+            </div>
+            <div class="card-body">
+                <canvas id="detectionChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-info"></i>Top Objek</h6>
+            </div>
+            <div class="card-body">
+                {% if top_labels_names %}
+                <canvas id="topObjectsChart" height="250"></canvas>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                    <small class="text-muted">Belum ada data deteksi</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-warning"></i>Aktivitas Deteksi Terbaru</h6>
+                <a href="/detection/history" class="btn btn-sm btn-outline-primary">Lihat Semua <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">#ID</th>
+                                <th>Gambar</th>
+                                <th>Objek Ditemukan</th>
+                                <th>Jumlah</th>
+                                <th class="d-none d-sm-table-cell text-end pe-4">Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in recent_list %}
+                            <tr>
+                                <td class="ps-4 fw-semibold">#{{ d.id }}</td>
+                                <td>
+                                    {% if d.image_path %}
+                                    <img src="/{{ d.image_path }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;"
+                                         onerror="this.src='https://via.placeholder.com/50?text=No'">
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for obj in d.objects %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ obj.label }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ d.total_objects }} objek</span>
+                                </td>
+                                <td class="d-none d-sm-table-cell text-end pe-4 text-muted small">{{ d.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                    <p class="text-muted mb-0">Belum ada aktivitas deteksi</p>
+                    <a href="/detection/upload" class="btn btn-primary btn-sm mt-2">Mulai Deteksi</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const d = new Date();
+    document.getElementById('currentDate').textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+</script>
+<script>
+    {% if chart_data %}
+    new Chart(document.getElementById('detectionChart'), {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|tojson }},
+            datasets: [{
+                label: 'Deteksi',
+                data: {{ chart_data|tojson }},
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, maxTicksLimit: 6 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+    {% endif %}
+
+    {% if top_labels_names %}
+    new Chart(document.getElementById('topObjectsChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ top_labels_names|tojson }},
+            datasets: [{
+                data: {{ top_labels_counts|tojson }},
+                backgroundColor: [
+                    '#667eea', '#f5576c', '#4facfe', '#43e97b',
+                    '#fa8231', '#a55eea', '#2bcbba', '#fd9644'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, padding: 8, font: { size: 11 } }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

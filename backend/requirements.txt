@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+psycopg2-binary
+python-multipart
+bcrypt>=4.0
+pydantic-settings
+opencv-python-headless
+ultralytics
+jinja2
+python-dotenv
+openpyxl
+fpdf2
+itsdangerous

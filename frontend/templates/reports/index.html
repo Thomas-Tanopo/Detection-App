@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Laporan - Detect App{% endblock %}
+{% block page_title %}<i class="bi bi-file-earmark-bar-graph me-2"></i>Laporan Deteksi{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-primary"></i>Riwayat Seluruh Deteksi</h6>
+        <div class="d-flex gap-2">
+            <button class="btn btn-success" onclick="exportReport('excel')" title="Export Excel">
+                <i class="bi bi-file-earmark-excel"></i><span class="d-none d-sm-inline ms-1">Excel</span>
+            </button>
+            <button class="btn btn-danger" onclick="exportReport('pdf')" title="Export PDF">
+                <i class="bi bi-file-earmark-pdf"></i><span class="d-none d-sm-inline ms-1">PDF</span>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3 g-2">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Tanggal Mulai</label>
+                <input type="date" class="form-control form-control-sm" id="filterStart">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Tanggal Akhir</label>
+                <input type="date" class="form-control form-control-sm" id="filterEnd">
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="applyFilter()">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="resetFilter()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover datatable" id="reportTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 50px">ID</th>
+                        <th>Gambar</th>
+                        <th>Objek Terdeteksi</th>
+                        <th class="d-none d-sm-table-cell">User</th>
+                        <th>Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in detections %}
+                    <tr>
+                        <td class="fw-semibold" data-order="{{ d.id }}">#{{ d.id }}</td>
+                        <td>
+                            {% if d.image_path %}
+                            <img src="/{{ d.image_path }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                 onclick='previewImage("{{ d.image_path }}")'
+                                 onerror="this.src='https://via.placeholder.com/50?text=N/A'">
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.detected_objects %}
+                                {% set objects = d.detected_objects|from_json %}
+                                {% for obj in objects[:3] %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ obj.label }}</span>
+                                {% endfor %}
+                                {% if objects|length > 3 %}
+                                <span class="badge bg-secondary">+{{ objects|length - 3 }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-sm-table-cell">{{ d.user.full_name or d.user.username if d.user else '-' }}</td>
+                        <td>{{ d.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 d-block text-muted mb-2"></i>
+                            <span class="text-muted">Belum ada data deteksi</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const table = $('#reportTable');
+        if (table.find('tbody tr').length > 1) {
+            window.reportDT = table.DataTable({
+                responsive: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: [0, 2] }
+                ],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json' },
+                order: [[0, 'desc']]
+            });
+        }
+    });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!window.reportDT) return true;
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        if (!start && !end) return true;
+        const parts = (data[4] || '').split(' ');
+        if (!parts[0]) return true;
+        const [d, m, y] = parts[0].split('/');
+        const rowDate = y + '-' + m + '-' + d;
+        if (start && rowDate < start) return false;
+        if (end && rowDate > end) return false;
+        return true;
+    });
+
+    function applyFilter() { window.reportDT?.draw(); }
+    function resetFilter() {
+        document.getElementById('filterStart').value = '';
+        document.getElementById('filterEnd').value = '';
+        window.reportDT?.draw();
+    }
+
+    function exportReport(type) {
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        let url = `/reports/export/${type}?`;
+        if (start) url += `start_date=${start}&`;
+        if (end) url += `end_date=${end}&`;
+        window.open(url, '_blank');
+    }
+</script>
+{% endblock %}
