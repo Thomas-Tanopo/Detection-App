@@ -1,2 +1,3 @@
 #!/bin/bash
-PYTHONPATH=/app/backend uvicorn app.main:app --host 0.0.0.0 --port 8000
+. /opt/venv/bin/activate
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000
