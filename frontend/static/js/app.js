@@ -356,11 +356,14 @@ async function renderHistory(el) {
 }
 
 function showHistoryModal(d) {
-    new bootstrap.Modal(Object.assign(document.createElement('div'), { className:'modal fade', innerHTML:`<div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+    const el = Object.assign(document.createElement('div'), { className:'modal fade', innerHTML:`<div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
       <div class="modal-header"><h6 class="modal-title fw-bold"><i class="bi bi-image me-2"></i>Detail Deteksi #${d.id}</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body text-center"><img src="${API_BASE}${d.image_url}" class="img-fluid rounded" style="max-height:500px" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22><rect fill=%22%23eee%22 width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22>N/A</text></svg>'">
         ${d.detected_objects?.length?`<div class="mt-3 text-start"><h6 class="fw-semibold">Objek Terdeteksi:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-light"><tr><th>#</th><th>Label</th><th>Confidence</th></tr></thead><tbody>${d.detected_objects.map((o,i)=>`<tr><td>${i+1}</td><td><span class="badge bg-primary">${o.label}</span></td><td>${(o.confidence*100).toFixed(1)}%</td></tr>`).join('')}</tbody></table></div></div>`:'<div class="alert alert-info mt-3">Tidak ada objek terdeteksi</div>'}
-      </div></div></div>`}));
+      </div></div></div>` });
+    el.addEventListener('hidden.bs.modal', () => el.remove());
+    document.body.appendChild(el);
+    bootstrap.Modal.getOrCreateInstance(el).show();
 }
 
 // ========== REPORTS ==========
