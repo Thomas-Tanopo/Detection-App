@@ -44,7 +44,7 @@ const api = {
     },
     reports: {
         list: (s, e) => apiFetch(`/api/reports?start_date=${s || ''}&end_date=${e || ''}`),
-        exportExcel: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/excel?start_date=${s||''}&end_date=${e||'&token='+token}`, '_blank'); },
-        exportPdf: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/pdf?start_date=${s||''}&end_date=${e||'&token='+token}`, '_blank'); },
+        exportExcel: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/excel?start_date=${s || ''}&end_date=${e || ''}&token=${token}`, '_blank'); },
+        exportPdf: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/pdf?start_date=${s || ''}&end_date=${e || ''}&token=${token}`, '_blank'); },
     }
 };

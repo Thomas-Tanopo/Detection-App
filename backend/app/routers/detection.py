@@ -37,11 +37,11 @@ class FrameRequest(BaseModel):
 @router.post("/detect-frame")
 def detect_frame(req: FrameRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        objects, annotated_b64, _ = detect_from_frame(req.image)
+        objects, annotated_b64, annotated_bytes = detect_from_frame(req.image)
         filename = f"{uuid.uuid4()}.jpg"
         filepath = os.path.join(settings.UPLOAD_DIR, filename)
         with open(filepath, "wb") as f:
-            f.write(annotated_b64)
+            f.write(annotated_bytes)
         det = Detection(image_path=filename, detected_objects=json.dumps(objects), user_id=user.id)
         db.add(det)
         db.commit()
