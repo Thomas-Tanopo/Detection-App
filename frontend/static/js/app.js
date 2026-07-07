@@ -65,7 +65,7 @@ function renderAppPage(page, app) {
       <div class="sidebar d-flex flex-column flex-shrink-0 p-3" id="sidebar">
         <div class="d-flex align-items-center justify-content-between mb-4">
           <a href="#" class="sidebar-brand d-flex align-items-center text-decoration-none" onclick="renderPage('dashboard')">
-            <i class="bi bi-camera-fill me-2"></i><span class="fw-bold">Detect App</span>
+            <i class="bi bi-camera-fill me-2"></i><span class="fw-bold">Detect Apps</span>
           </a>
           <button class="btn btn-link text-white d-md-none p-0" onclick="toggleSidebar(false)"><i class="bi bi-x-lg fs-5"></i></button>
         </div>

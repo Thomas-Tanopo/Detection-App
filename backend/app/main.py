@@ -11,7 +11,7 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     yield
 
-app = FastAPI(title="Detect App API", lifespan=lifespan)
+app = FastAPI(title="Detect Apps API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
