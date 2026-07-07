@@ -7,9 +7,6 @@ bcrypt>=4.0
 pydantic-settings
 opencv-python-headless
 ultralytics
-jinja2
-python-dotenv
 openpyxl
 fpdf2
-itsdangerous
 PyJWT

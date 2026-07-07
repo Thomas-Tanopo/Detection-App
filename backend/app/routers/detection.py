@@ -1,5 +1,5 @@
 import uuid, os, json
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config import settings

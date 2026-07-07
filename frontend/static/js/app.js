@@ -1,6 +1,5 @@
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let detectionChart = null, topChart = null;
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
 function showAlert(msg, type = 'success') {
     const el = document.getElementById('alertBox');
@@ -136,7 +135,7 @@ async function renderDashboard(el) {
     el.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div><h5 class="mb-1 fw-bold">Selamat datang, ${currentUser?.full_name||currentUser?.username}!</h5><p class="text-muted mb-0 d-none d-sm-block">Ringkasan aktivitas deteksi hari ini.</p></div>
-      <span class="d-none d-md-block badge bg-light text-muted px-3 py-2"><i class="bi bi-calendar3 me-1"></i>${new Date().getDate()} ${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}</span>
+      <span class="d-none d-md-block badge bg-light text-muted px-3 py-2"><i class="bi bi-calendar3 me-1"></i>${new Date().toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'})}</span>
     </div>
     <div class="row g-4 mb-4">${[
       {v:stats.today_detections,l:'Deteksi Hari Ini',i:'camera-fill',c:'#667eea #764ba2',s:`<i class="bi bi-arrow-${tp>0?'up':tp<0?'down':'dash'}-short"></i> ${tp>0?'+':''}${tp}% vs kemarin`},
@@ -336,7 +335,7 @@ function renderResult(data) {
       ${data.detected_objects?.length ? `<div class="mt-3 d-flex flex-wrap gap-2 justify-content-center">${data.detected_objects.map(o => `<span class="badge bg-primary fs-6 px-3 py-2">${o.label} <span class="bg-white bg-opacity-25 rounded px-1 ms-1">${(o.confidence*100).toFixed(1)}%</span></span>`).join('')}</div>` : '<div class="alert alert-info mt-3">Tidak ada objek terdeteksi</div>'}
       <div class="mt-3 d-flex flex-wrap justify-content-center gap-2">
         <button class="btn btn-primary" onclick="renderPage('history')"><i class="bi bi-clock-history me-1"></i>Lihat Riwayat</button>
-        <button class="btn btn-outline-secondary" onclick="renderPage('${data.image_url?.includes('camera')?'camera':'upload'}')"><i class="bi bi-camera me-1"></i>Deteksi Lagi</button>
+        <button class="btn btn-outline-secondary" onclick="renderPage('upload')"><i class="bi bi-camera me-1"></i>Deteksi Lagi</button>
       </div></div></div>`;
 }
 

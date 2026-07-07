@@ -44,7 +44,19 @@ const api = {
     },
     reports: {
         list: (s, e) => apiFetch(`/api/reports?start_date=${s || ''}&end_date=${e || ''}`),
-        exportExcel: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/excel?start_date=${s || ''}&end_date=${e || ''}&token=${token}`, '_blank'); },
-        exportPdf: (s, e) => { const token = localStorage.getItem('token'); window.open(API_BASE + `/api/reports/export/pdf?start_date=${s || ''}&end_date=${e || ''}&token=${token}`, '_blank'); },
+        exportExcel: async (s, e) => {
+            const res = await apiFetch(`/api/reports/export/excel?start_date=${s || ''}&end_date=${e || ''}`, { raw: true });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'laporan_deteksi.xlsx'; a.click();
+            URL.revokeObjectURL(url);
+        },
+        exportPdf: async (s, e) => {
+            const res = await apiFetch(`/api/reports/export/pdf?start_date=${s || ''}&end_date=${e || ''}`, { raw: true });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'laporan_deteksi.pdf'; a.click();
+            URL.revokeObjectURL(url);
+        },
     }
 };

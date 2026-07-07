@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Float, DateTime
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -13,16 +13,3 @@ class Detection(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", backref="detections")
-
-class DetectionItem(Base):
-    __tablename__ = "detection_items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    detection_id = Column(Integer, ForeignKey("detections.id", ondelete="CASCADE"))
-    item_id = Column(Integer, ForeignKey("items.id"))
-    label = Column(String(100))
-    confidence = Column(Float)
-    quantity = Column(Integer, default=1)
-
-    detection = relationship("Detection", backref="detection_items")
-    item = relationship("Item", backref="detection_items")
