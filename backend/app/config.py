@@ -8,6 +8,6 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "*"
 
     class Config:
-        env_file = ".env"
+        env_file = "backend/.env"
 
 settings = Settings()

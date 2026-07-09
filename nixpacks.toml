@@ -1,8 +1,14 @@
-[phases.install]
-cmds = ["pip install -r backend/requirements.txt"]
+name = "detect-app-backend"
 
-[phases.setup]
-nixPkgs = ["libgl1", "libglib2.0"]
+[phases]
+  [phases.setup]
+  nixPkgs = ["libgl1", "libglib2.0"]
+
+  [phases.install]
+  cmds = [
+    "pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu",
+    "pip install -r backend/requirements.txt",
+  ]
 
 [start]
-cmd = "PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000"
+cmd = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
