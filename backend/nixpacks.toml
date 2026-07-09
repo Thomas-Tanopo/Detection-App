@@ -1,12 +1,12 @@
 name = "detect-app-backend"
 
 [phases.setup]
-nixPkgs = ["python3", "libGL", "glib"]
+nixPkgs = ["libGL", "glib"]
 
 [phases.install]
 cmds = [
-    "python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu",
-    "python -m pip install -r requirements.txt",
+    "pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu",
+    "pip install -r requirements.txt",
 ]
 
 [start]
