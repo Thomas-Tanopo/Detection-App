@@ -1,7 +1,7 @@
 name = "detect-app-backend"
 
 [phases.setup]
-nixPkgs = ["libgl1", "libglib2.0"]
+nixPkgs = ["libGL", "glib"]
 
 [phases.install]
 cmds = [
