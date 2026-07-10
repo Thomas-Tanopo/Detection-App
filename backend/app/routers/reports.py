@@ -25,7 +25,7 @@ def list_detections(start_date: str = Query(""), end_date: str = Query(""), user
         objects = json.loads(d.detected_objects) if d.detected_objects else []
         result.append({
             "id": d.id,
-            "image_url": f"/uploads/{d.image_path}" if d.image_path else None,
+            "image_url": f"/api/detection/image/{d.image_path}" if d.image_path else None,
             "detected_objects": objects,
             "total_objects": len(objects),
             "user": d.user.full_name or d.user.username if d.user else None,

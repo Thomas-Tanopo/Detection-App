@@ -35,6 +35,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/register")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    if len(req.password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password minimal 6 karakter")
     if db.query(User).filter((User.username == req.username) | (User.email == req.email)).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username atau email sudah terdaftar")
     pwd = bcrypt.hashpw(req.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "detect-app-secret-key-change-in-production"
     UPLOAD_DIR: str = "uploads"
     CORS_ORIGINS: str = "*"
+    JWT_EXPIRY_HOURS: int = 24
 
     class Config:
         env_file = ".env"

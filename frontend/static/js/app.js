@@ -1,3 +1,10 @@
+function imgUrl(path) {
+    if (!path) return '';
+    const token = localStorage.getItem('token');
+    const sep = path.includes('?') ? '&' : '?';
+    return API_BASE + path + (token ? sep + 'token=' + encodeURIComponent(token) : '');
+}
+
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let detectionChart = null, topChart = null;
 
@@ -167,7 +174,7 @@ async function renderDashboard(el) {
 function renderRecentTable(data) {
     let html = `<div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th class="ps-4">#ID</th><th>Gambar</th><th>Objek</th><th>Jumlah</th><th class="d-none d-sm-table-cell text-end pe-4">Waktu</th></tr></thead><tbody>`;
     data.forEach(d => {
-        html += `<tr><td class="ps-4 fw-semibold">#${d.id}</td><td>${d.image_url?`<img src="${API_BASE}${d.image_url}" class="rounded" style="width:50px;height:50px;object-fit:cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2210%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td><td>${d.objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.objects.length>3?`<span class="badge bg-secondary">+${d.objects.length-3}</span>`:''}</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary">${d.total_objects} objek</span></td><td class="d-none d-sm-table-cell text-end pe-4 text-muted small">${new Date(d.created_at).toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td class="ps-4 fw-semibold">#${d.id}</td><td>${d.image_url?`<img src="${imgUrl(d.image_url)}" class="rounded" style="width:50px;height:50px;object-fit:cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2210%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td><td>${d.objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.objects.length>3?`<span class="badge bg-secondary">+${d.objects.length-3}</span>`:''}</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary">${d.total_objects} objek</span></td><td class="d-none d-sm-table-cell text-end pe-4 text-muted small">${new Date(d.created_at).toLocaleString('id-ID')}</td></tr>`;
     });
     html += '</tbody></table></div>';
     return html;
@@ -331,7 +338,7 @@ function renderCamera(el) {
 
 function renderResult(data) {
     return `<div class="card shadow-sm border-0"><div class="card-header bg-white d-flex justify-content-between align-items-center"><h6 class="mb-0 fw-bold"><i class="bi bi-search me-2"></i>Hasil Deteksi</h6></div>
-      <div class="card-body text-center"><img src="${API_BASE}${data.image_url}" class="img-fluid rounded shadow-sm" style="max-height:400px">
+      <div class="card-body text-center"><img src="${imgUrl(data.image_url)}" class="img-fluid rounded shadow-sm" style="max-height:400px">
       ${data.detected_objects?.length ? `<div class="mt-3 d-flex flex-wrap gap-2 justify-content-center">${data.detected_objects.map(o => `<span class="badge bg-primary fs-6 px-3 py-2">${o.label} <span class="bg-white bg-opacity-25 rounded px-1 ms-1">${(o.confidence*100).toFixed(1)}%</span></span>`).join('')}</div>` : '<div class="alert alert-info mt-3">Tidak ada objek terdeteksi</div>'}
       <div class="mt-3 d-flex flex-wrap justify-content-center gap-2">
         <button class="btn btn-primary" onclick="renderPage('history')"><i class="bi bi-clock-history me-1"></i>Lihat Riwayat</button>
@@ -346,7 +353,7 @@ async function renderHistory(el) {
     el.innerHTML = `
     <div class="card shadow-sm border-0"><div class="card-header bg-white d-flex justify-content-between align-items-center py-3"><h6 class="mb-0 fw-bold">Riwayat Deteksi</h6><span class="badge bg-primary">${dets.length} data</span></div>
       <div class="card-body"><div class="table-responsive"><table class="table table-hover datatable" id="historyTable"><thead class="table-light"><tr><th style="width:50px">ID</th><th>Gambar</th><th>Objek</th><th class="d-none d-sm-table-cell">Tanggal</th><th style="width:80px">Detail</th></tr></thead><tbody>${dets.map(d => `
-        <tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${API_BASE}${d.image_url}" class="rounded" style="width:60px;height:60px;object-fit:cover;cursor:pointer" onclick="showHistoryModal(${JSON.stringify(d).replace(/"/g,'&quot;')})" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23eee%22 width=%2260%22 height=%2260%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td>
+        <tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${imgUrl(d.image_url)}" class="rounded" style="width:60px;height:60px;object-fit:cover;cursor:pointer" onclick="showHistoryModal(${JSON.stringify(d).replace(/"/g,'&quot;')})" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23eee%22 width=%2260%22 height=%2260%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td>
         <td>${d.detected_objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.detected_objects.length>3?`<span class="badge bg-secondary">+${d.detected_objects.length-3}</span>`:''}</td>
         <td class="d-none d-sm-table-cell">${new Date(d.created_at).toLocaleString('id-ID')}</td>
         <td class="text-center"><button class="btn btn-outline-primary" onclick="showHistoryModal(${JSON.stringify(d).replace(/"/g,'&quot;')})"><i class="bi bi-eye"></i></button></td></tr>
@@ -357,7 +364,7 @@ async function renderHistory(el) {
 function showHistoryModal(d) {
     const el = Object.assign(document.createElement('div'), { className:'modal fade', innerHTML:`<div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
       <div class="modal-header"><h6 class="modal-title fw-bold"><i class="bi bi-image me-2"></i>Detail Deteksi #${d.id}</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body text-center"><img src="${API_BASE}${d.image_url}" class="img-fluid rounded" style="max-height:500px" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22><rect fill=%22%23eee%22 width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22>N/A</text></svg>'">
+      <div class="modal-body text-center"><img src="${imgUrl(d.image_url)}" class="img-fluid rounded" style="max-height:500px" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22><rect fill=%22%23eee%22 width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22>N/A</text></svg>'">
         ${d.detected_objects?.length?`<div class="mt-3 text-start"><h6 class="fw-semibold">Objek Terdeteksi:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-light"><tr><th>#</th><th>Label</th><th>Confidence</th></tr></thead><tbody>${d.detected_objects.map((o,i)=>`<tr><td>${i+1}</td><td><span class="badge bg-primary">${o.label}</span></td><td>${(o.confidence*100).toFixed(1)}%</td></tr>`).join('')}</tbody></table></div></div>`:'<div class="alert alert-info mt-3">Tidak ada objek terdeteksi</div>'}
       </div></div></div>` });
     el.addEventListener('hidden.bs.modal', () => el.remove());
@@ -380,7 +387,7 @@ async function renderReports(el) {
           <div class="col-md-4 d-flex align-items-end gap-2"><button class="btn btn-outline-primary btn-sm flex-fill" onclick="filterReports()"><i class="bi bi-funnel me-1"></i>Filter</button><button class="btn btn-outline-secondary btn-sm" onclick="resetFilter()"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button></div>
         </div>
         <div class="table-responsive"><table class="table table-hover datatable" id="reportTable"><thead class="table-light"><tr><th style="width:50px">ID</th><th>Gambar</th><th>Objek</th><th class="d-none d-sm-table-cell">User</th><th>Tanggal</th></tr></thead><tbody>${dets.map(d => `
-          <tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${API_BASE}${d.image_url}" class="rounded" style="width:50px;height:50px;object-fit:cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2210%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td>
+          <tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${imgUrl(d.image_url)}" class="rounded" style="width:50px;height:50px;object-fit:cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2210%22>N/A</text></svg>'">`:'<span class="text-muted">-</span>'}</td>
           <td>${d.detected_objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.detected_objects.length>3?`<span class="badge bg-secondary">+${d.detected_objects.length-3}</span>`:''}</td>
           <td class="d-none d-sm-table-cell">${d.user||'-'}</td>
           <td>${new Date(d.created_at).toLocaleString('id-ID')}</td></tr>
@@ -392,7 +399,7 @@ async function renderReports(el) {
         const start = document.getElementById('fStart').value, end = document.getElementById('fEnd').value;
         api.reports.list(start, end).then(data => {
             const tbody = document.querySelector('#reportTable tbody');
-            tbody.innerHTML = data.map(d => `<tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${API_BASE}${d.image_url}" class="rounded" style="width:50px;height:50px;object-fit:cover">`:'<span class="text-muted">-</span>'}</td><td>${d.detected_objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.detected_objects.length>3?`<span class="badge bg-secondary">+${d.detected_objects.length-3}</span>`:''}</td><td class="d-none d-sm-table-cell">${d.user||'-'}</td><td>${new Date(d.created_at).toLocaleString('id-ID')}</td></tr>`).join('');
+            tbody.innerHTML = data.map(d => `<tr><td class="fw-semibold" data-order="${d.id}">#${d.id}</td><td>${d.image_url?`<img src="${imgUrl(d.image_url)}" class="rounded" style="width:50px;height:50px;object-fit:cover">`:'<span class="text-muted">-</span>'}</td><td>${d.detected_objects.slice(0,3).map(o=>`<span class="badge bg-primary bg-opacity-10 text-primary me-1">${o.label}</span>`).join('')}${d.detected_objects.length>3?`<span class="badge bg-secondary">+${d.detected_objects.length-3}</span>`:''}</td><td class="d-none d-sm-table-cell">${d.user||'-'}</td><td>${new Date(d.created_at).toLocaleString('id-ID')}</td></tr>`).join('');
             if (dt) { dt.destroy(); dt = initDT('reportTable', 0); }
         });
     };

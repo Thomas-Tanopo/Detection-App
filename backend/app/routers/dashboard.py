@@ -66,7 +66,7 @@ def recent(user: User = Depends(get_current_user), db: Session = Depends(get_db)
         objects = json.loads(d.detected_objects) if d.detected_objects else []
         result.append({
             "id": d.id,
-            "image_url": f"/uploads/{d.image_path}" if d.image_path else None,
+            "image_url": f"/api/detection/image/{d.image_path}" if d.image_path else None,
             "objects": objects,
             "total_objects": len(objects),
             "created_at": d.created_at.isoformat()
